@@ -18,7 +18,18 @@ func NewDivisionHandler(u *usecase.DivisionUsecase) *DivisionHandler {
 	return &DivisionHandler{uc: u}
 }
 
-// CREATE
+// CreateDivision godoc
+// @Summary Create division
+// @Description Create new division
+// @Tags Division
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body domain.Division true "Division payload"
+// @Success 201 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/divisions [post]
 func (h *DivisionHandler) Create(c *gin.Context) {
 	var req domain.Division
 
@@ -42,7 +53,15 @@ func (h *DivisionHandler) Create(c *gin.Context) {
 	})
 }
 
-// GET ALL
+// GetAllDivisions godoc
+// @Summary Get all divisions
+// @Description Get list of divisions
+// @Tags Division
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} domain.Division
+// @Failure 500 {object} map[string]string
+// @Router /v1/divisions [get]
 func (h *DivisionHandler) GetAll(c *gin.Context) {
 	data, err := h.uc.GetAll()
 	if err != nil {
@@ -53,7 +72,17 @@ func (h *DivisionHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-// GET BY ID
+// GetDivisionByID godoc
+// @Summary Get division by ID
+// @Description Get detail division
+// @Tags Division
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Division ID"
+// @Success 200 {object} domain.Division
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /v1/divisions/{id} [get]
 func (h *DivisionHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
@@ -70,7 +99,19 @@ func (h *DivisionHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-// UPDATE
+// UpdateDivision godoc
+// @Summary Update division
+// @Description Update division data
+// @Tags Division
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Division ID"
+// @Param body body domain.Division true "Division payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/divisions/{id} [put]
 func (h *DivisionHandler) Update(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
@@ -96,7 +137,16 @@ func (h *DivisionHandler) Update(c *gin.Context) {
 	})
 }
 
-// DELETE (SOFT)
+// DeleteDivision godoc
+// @Summary Delete division
+// @Description Soft delete division
+// @Tags Division
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Division ID"
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/divisions/{id} [delete]
 func (h *DivisionHandler) Delete(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {

@@ -18,12 +18,24 @@ func NewRoleMenuHandler(uc *usecase.RoleMenuUsecase) *RoleMenuHandler {
 
 /*
 Request JSON:
-
-	{
-	  "role_id": 1,
-	  "menu_ids": [1,2,3]
-	}
+{
+  "role_id": 1,
+  "menu_ids": [1,2,3]
+}
 */
+
+// AssignMenu godoc
+// @Summary Assign menu to role
+// @Description Assign multiple menus to a role
+// @Tags Role Menu
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body map[string]interface{} true "Role & Menu IDs"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/roles/menus [post]
 func (h *RoleMenuHandler) AssignMenu(c *gin.Context) {
 	var req struct {
 		RoleID  uint   `json:"role_id"`

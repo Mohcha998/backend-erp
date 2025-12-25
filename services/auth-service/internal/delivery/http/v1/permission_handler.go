@@ -24,6 +24,19 @@ Request JSON:
 	  "permission_ids": [1,2,3]
 	}
 */
+
+// AssignPermission godoc
+// @Summary Assign permission to role
+// @Description Assign multiple permissions to a role
+// @Tags Role Permission
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body object{role_id=uint,permission_ids=[]uint} true "Role Permission Payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/roles/permissions [post]
 func (h *RolePermissionHandler) AssignPermission(c *gin.Context) {
 	var req struct {
 		RoleID        uint   `json:"role_id"`

@@ -147,9 +147,65 @@ CREATE TABLE role_permissions (
 );
 
 -- =====================================================
+-- ACTIVITY LOGS
+-- =====================================================
+CREATE TABLE activity_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    activity VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(50),
+    created_at TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT fk_activity_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_activity_user ON activity_logs(user_id);
+
+-- =====================================================
+-- AUDIT LOGS
+-- =====================================================
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    entity VARCHAR(50) NOT NULL,
+    entity_id INTEGER,
+    ip_address VARCHAR(50),
+    created_at TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT fk_audit_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_audit_user ON audit_logs(user_id);
+
+-- =====================================================
+-- REFRESH TOKENS
+-- =====================================================
+CREATE TABLE refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT fk_refresh_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE
+
+-- =====================================================
 -- INDEXES (PERFORMANCE)
 -- =====================================================
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_division ON users(division_id);
 CREATE INDEX idx_role_menus_role ON role_menus(role_id);
 CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
+CREATE INDEX idx_refresh_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_user ON refresh_tokens(user_id);

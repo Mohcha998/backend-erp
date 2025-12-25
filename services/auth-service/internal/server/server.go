@@ -5,13 +5,17 @@ import (
 	"net/http"
 	"time"
 
+	_ "auth-service/docs"
 	v1 "auth-service/internal/delivery/http/v1"
 	"auth-service/internal/infrastructure/config"
 	"auth-service/internal/infrastructure/database"
+	"auth-service/internal/infrastructure/database/seeders"
 	"auth-service/internal/repository"
 	"auth-service/internal/usecase"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Run() {
@@ -34,12 +38,18 @@ func Run() {
 		log.Fatal("❌ database connection failed:", err)
 	}
 
-	// Auto migration
+	// ================= MIGRATION =================
 	database.RunMigration(db)
+
+	// ================= SEEDER =================
+	if err := seeders.SeedAll(db); err != nil {
+		log.Fatal("❌ Seeder failed:", err)
+	}
 
 	// ================= REPOSITORIES =================
 	userRepo := repository.NewUserRepository(db)
 	userRoleRepo := repository.NewUserRoleRepository()
+	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 
 	divisionRepo := repository.NewDivisionRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
@@ -53,6 +63,7 @@ func Run() {
 		db,
 		userRepo,
 		userRoleRepo,
+		refreshTokenRepo,
 		cfg.JWT.SecretKey,
 	)
 
@@ -70,16 +81,15 @@ func Run() {
 	divisionHandler := v1.NewDivisionHandler(divisionUC)
 	roleHandler := v1.NewRoleHandler(roleUC)
 	menuHandler := v1.NewMenuHandler(menuUC)
-
 	roleMenuHandler := v1.NewRoleMenuHandler(roleMenuUC)
 	rolePermissionHandler := v1.NewRolePermissionHandler(rolePermissionUC)
 
-	// ================= ROUTES =================
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	// ================= SWAGGER =================
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// ================= ROUTES =================
 	api := r.Group("/api")
+
 	v1.RegisterRoutes(
 		api,
 		authHandler,
@@ -89,6 +99,9 @@ func Run() {
 		divisionHandler,
 		roleMenuHandler,
 		rolePermissionHandler,
+		userRepo,
+		authUC,
+		cfg.JWT.SecretKey,
 	)
 
 	// ================= HTTP SERVER =================
