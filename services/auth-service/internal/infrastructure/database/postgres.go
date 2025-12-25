@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"auth-service/internal/infrastructure/config"
 
@@ -12,20 +13,25 @@ import (
 
 func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
-		"postgres://%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		url.QueryEscape(cfg.DB.User),
+		url.QueryEscape(cfg.DB.Password),
 		cfg.DB.Host,
 		cfg.DB.Port,
 		cfg.DB.Name,
 	)
 
-	// log.Println("🔗 FINAL DSN =", dsn)
+	var db *gorm.DB
+	var err error
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, err
+	// 🔁 Retry connect (Docker-safe)
+	for i := 1; i <= 15; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			return db, nil
+		}
+		time.Sleep(2 * time.Second)
 	}
 
-	// log.Println("✅ connected to postgres:", cfg.DB.Name)
-	return db, nil
+	return nil, err
 }

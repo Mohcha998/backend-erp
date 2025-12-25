@@ -18,17 +18,24 @@ func Run() {
 	// ================= CONFIG =================
 	cfg := config.Load()
 
-	// ================= GIN ENGINE =================
+	// ================= GIN =================
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	_ = r.SetTrustedProxies([]string{"127.0.0.1"})
+
+	if err := r.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		log.Fatal("❌ trusted proxy error:", err)
+	}
 
 	// ================= DATABASE =================
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
-		log.Fatal("❌ failed to connect database:", err)
+		log.Fatal("❌ database connection failed:", err)
 	}
+
+	// 🔥🔥🔥 INI YANG SEBELUMNYA HILANG
+	database.RunMigration(db)
 
 	// ================= REPOSITORIES =================
 	userRepo := repository.NewUserRepository(db)
@@ -62,7 +69,6 @@ func Run() {
 
 	// ================= ROUTES =================
 	api := r.Group("/api")
-
 	v1.RegisterRoutes(
 		api,
 		authHandler,

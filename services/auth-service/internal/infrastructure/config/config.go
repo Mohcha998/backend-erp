@@ -1,8 +1,6 @@
 package config
 
-import (
-	"os"
-)
+import "os"
 
 type Config struct {
 	App AppConfig
@@ -27,26 +25,28 @@ type JWTConfig struct {
 }
 
 func Load() *Config {
-	cfg := &Config{
+	return &Config{
 		App: AppConfig{
 			Port: getEnv("APP_PORT", "8081"),
 		},
+		// DB: DBConfig{
+		// 	Host:     getEnv("PGHOST", "127.0.0.1"),
+		// 	Port:     getEnv("PGPORT", "5432"),
+		// 	User:     getEnv("PGUSER", "postgres"),
+		// 	Password: getEnv("PGPASSWORD", ""),
+		// 	Name:     getEnv("PGDATABASE", "erp_db"),
+		// },
 		DB: DBConfig{
 			Host:     getEnv("PGHOST", "127.0.0.1"),
 			Port:     getEnv("PGPORT", "5432"),
 			User:     getEnv("PGUSER", "MRCorp"),
-			Password: os.Getenv("PGPASSWORD"),
+			Password: getEnv("PGPASSWORD", ""),
 			Name:     getEnv("PGDATABASE", "erp_db"),
 		},
 		JWT: JWTConfig{
 			SecretKey: getEnv("JWT_SECRET", "secret"),
 		},
 	}
-
-	// log.Println("✅ config loaded")
-	// log.Println("📦 DB =", cfg.DB.Name)
-
-	return cfg
 }
 
 func getEnv(key, fallback string) string {

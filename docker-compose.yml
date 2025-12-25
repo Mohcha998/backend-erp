@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:15
@@ -10,6 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d erp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   auth-service:
     build: ./services/auth-service
@@ -18,26 +25,34 @@ services:
       - "8081:8081"
     environment:
       APP_PORT: 8081
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: erp_db
+
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: erp_db
+
       JWT_SECRET: supersecret
+      GIN_MODE: release
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   inventory-service:
     build: ./services/inventory-service
     container_name: inventory-service
     ports:
       - "8080:8080"
+    environment:
+      GIN_MODE: release
 
   purchasing-service:
     build: ./services/purchasing-service
     container_name: purchasing-service
     ports:
       - "8082:8082"
+    environment:
+      GIN_MODE: release
 
 volumes:
   pgdata:
