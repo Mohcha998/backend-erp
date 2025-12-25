@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: erp-postgres
+    environment:
+      POSTGRES_DB: erp_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      APP_PORT: 8081
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: erp_db
+      JWT_SECRET: supersecret
+    depends_on:
+      - postgres
+
+  inventory-service:
+    build: ./services/inventory-service
+    container_name: inventory-service
+    ports:
+      - "8080:8080"
+
+  purchasing-service:
+    build: ./services/purchasing-service
+    container_name: purchasing-service
+    ports:
+      - "8082:8082"
+
+volumes:
+  pgdata:
