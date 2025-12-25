@@ -19,16 +19,33 @@ func NewUserUsecase(db *gorm.DB, repo repository.UserRepository) *UserUsecase {
 	}
 }
 
-// CREATE USER (ADMIN)
+// CREATE
 func (u *UserUsecase) Create(user *domain.User) error {
 	return u.db.Transaction(func(tx *gorm.DB) error {
 		return u.repo.Create(tx, user)
 	})
 }
 
-// GET ALL USER
+// UPDATE
+func (u *UserUsecase) Update(user *domain.User) error {
+	return u.db.Transaction(func(tx *gorm.DB) error {
+		return u.repo.Update(tx, user)
+	})
+}
+
+// DELETE (SOFT)
+func (u *UserUsecase) Delete(id uint) error {
+	return u.db.Transaction(func(tx *gorm.DB) error {
+		return u.repo.Delete(tx, id)
+	})
+}
+
+// GET ALL
 func (u *UserUsecase) GetAll() ([]domain.User, error) {
-	var users []domain.User
-	err := u.db.Find(&users).Error
-	return users, err
+	return u.repo.FindAll()
+}
+
+// GET BY ID
+func (u *UserUsecase) GetByID(id uint) (*domain.User, error) {
+	return u.repo.FindByID(id)
 }

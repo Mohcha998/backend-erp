@@ -3,33 +3,44 @@ package v1
 import (
 	"net/http"
 
-	"auth-service/internal/domain"
 	"auth-service/internal/usecase"
 
 	"github.com/gin-gonic/gin"
 )
 
-type PermissionHandler struct {
+type RolePermissionHandler struct {
 	uc *usecase.PermissionUsecase
 }
 
-func NewPermissionHandler(uc *usecase.PermissionUsecase) *PermissionHandler {
-	return &PermissionHandler{uc}
+func NewRolePermissionHandler(uc *usecase.PermissionUsecase) *RolePermissionHandler {
+	return &RolePermissionHandler{uc}
 }
 
-func (h *PermissionHandler) Create(c *gin.Context) {
-	var p domain.RoleMenuPermission
-	c.ShouldBindJSON(&p)
+/*
+Request JSON:
 
-	if err := h.uc.Create(&p); err != nil {
+	{
+	  "role_id": 1,
+	  "permission_ids": [1,2,3]
+	}
+*/
+func (h *RolePermissionHandler) AssignPermission(c *gin.Context) {
+	var req struct {
+		RoleID        uint   `json:"role_id"`
+		PermissionIDs []uint `json:"permission_ids"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, p)
-}
+	if err := h.uc.Assign(req.RoleID, req.PermissionIDs); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-func (h *PermissionHandler) GetAll(c *gin.Context) {
-	data, _ := h.uc.GetAll()
-	c.JSON(http.StatusOK, data)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "permission assigned to role successfully",
+	})
 }

@@ -17,11 +17,11 @@ func NewAuthHandler(authUC usecase.AuthUsecase) *AuthHandler {
 	return &AuthHandler{authUC}
 }
 
-/* ========== LOGIN ========== */
+/* ================= LOGIN ================= */
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -35,28 +35,23 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }
 
-/* ========== REGISTER ========== */
+/* ================= REGISTER ================= */
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req struct {
-		Name       string `json:"name"`
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		DivisionID uint   `json:"division_id"` // ✅ uint
-		RoleID     uint   `json:"role_id"`     // ✅ uint
+		Name       string `json:"name" binding:"required"`
+		Email      string `json:"email" binding:"required,email"`
+		Password   string `json:"password" binding:"required,min=6"`
+		DivisionID uint   `json:"division_id" binding:"required"`
+		RoleID     uint   `json:"role_id" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if req.DivisionID == 0 || req.RoleID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "division_id and role_id must be greater than 0",
-		})
 		return
 	}
 
@@ -77,28 +72,31 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
-/* ========== LOGOUT ========== */
+/* ================= LOGOUT ================= */
 func (h *AuthHandler) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing Authorization header"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
 		return
 	}
 
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 	if token == authHeader {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid Authorization header"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token format"})
 		return
 	}
 
 	h.authUC.Logout(token)
-	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "logged out successfully",
+	})
 }
 
-/* ========== FORGOT PASSWORD ========== */
+/* ================= FORGOT PASSWORD ================= */
 func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	var req struct {
-		Email string `json:"email"`
+		Email string `json:"email" binding:"required,email"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

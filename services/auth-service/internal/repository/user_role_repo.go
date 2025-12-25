@@ -7,18 +7,15 @@ import (
 )
 
 type UserRoleRepository interface {
-	Create(tx *gorm.DB, userRole *domain.UserRole) error
+	Create(tx *gorm.DB, ur *domain.UserRole) error
 }
 
-type userRoleRepo struct {
-	db *gorm.DB
+type userRoleRepo struct{}
+
+func NewUserRoleRepository() UserRoleRepository {
+	return &userRoleRepo{}
 }
 
-func NewUserRoleRepository(db *gorm.DB) UserRoleRepository {
-	return &userRoleRepo{db: db}
-}
-
-// Create method untuk menambahkan user role
-func (r *userRoleRepo) Create(tx *gorm.DB, userRole *domain.UserRole) error {
-	return tx.Create(userRole).Error
+func (r *userRoleRepo) Create(tx *gorm.DB, ur *domain.UserRole) error {
+	return tx.Create(ur).Error
 }

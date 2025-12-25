@@ -1,21 +1,15 @@
 package usecase
 
-import (
-	"auth-service/internal/domain"
-	"auth-service/internal/repository"
-)
+import "auth-service/internal/repository"
 
-type PermissionUsecase struct {
-	repo *repository.RoleMenuPermissionRepository
+type RoleMenuUsecase struct {
+	repo repository.RoleMenuRepository
 }
 
-func NewPermissionUsecase(r *repository.RoleMenuPermissionRepository) *PermissionUsecase {
-	return &PermissionUsecase{r}
+func NewRoleMenuUsecase(r repository.RoleMenuRepository) *RoleMenuUsecase {
+	return &RoleMenuUsecase{repo: r}
 }
 
-func (u *PermissionUsecase) Create(p *domain.RoleMenuPermission) error {
-	return u.repo.Create(p)
-}
-func (u *PermissionUsecase) GetAll() ([]domain.RoleMenuPermission, error) {
-	return u.repo.FindAll()
+func (u *RoleMenuUsecase) Assign(roleID uint, menuIDs []uint) error {
+	return u.repo.Assign(roleID, menuIDs)
 }

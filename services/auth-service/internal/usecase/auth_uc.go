@@ -13,12 +13,16 @@ import (
 	"gorm.io/gorm"
 )
 
+/* ================= INTERFACE ================= */
+
 type AuthUsecase interface {
 	Login(email, password string) (string, error)
 	Register(name, email, password string, divisionID, roleID uint) error
 	Logout(token string)
 	ForgotPassword(email string) (string, error)
 }
+
+/* ================= STRUCT ================= */
 
 type authUsecase struct {
 	db           *gorm.DB
@@ -27,7 +31,10 @@ type authUsecase struct {
 	jwtKey       string
 }
 
+/* ================= TOKEN BLACKLIST ================= */
 var tokenBlacklist sync.Map
+
+/* ================= CONSTRUCTOR ================= */
 
 func NewAuthUsecase(
 	db *gorm.DB,
@@ -43,23 +50,30 @@ func NewAuthUsecase(
 	}
 }
 
-/* ================= LOGIN ================= */
 func (u *authUsecase) Login(email, password string) (string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", errors.New("user not found")
+		return "", errors.New("invalid email or password")
 	}
 
+	// ✅ bcrypt compare
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
 		[]byte(password),
 	); err != nil {
-		return "", errors.New("invalid password")
+		return "", errors.New("invalid email or password")
+	}
+
+	// ambil role
+	roles := []string{}
+	for _, r := range user.Roles {
+		roles = append(roles, r.Name)
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": user.ID, // ✅ uint
+		"user_id": user.ID,
 		"email":   user.Email,
+		"roles":   roles,
 		"exp":     time.Now().Add(8 * time.Hour).Unix(),
 	}
 
@@ -67,23 +81,30 @@ func (u *authUsecase) Login(email, password string) (string, error) {
 	return token.SignedString([]byte(u.jwtKey))
 }
 
-/* ================= REGISTER ================= */
 func (u *authUsecase) Register(
 	name, email, password string,
 	divisionID, roleID uint,
 ) error {
-	_, err := u.userRepo.FindByEmail(email)
-	if err == nil {
+
+	// cek email
+	if _, err := u.userRepo.FindByEmail(email); err == nil {
 		return errors.New("email already registered")
 	}
 
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// bcrypt hash
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		return err
+	}
 
 	return u.db.Transaction(func(tx *gorm.DB) error {
 		user := &domain.User{
 			Name:       name,
 			Email:      email,
-			Password:   string(hash),
+			Password:   string(hashedPassword),
 			DivisionID: divisionID,
 		}
 
@@ -91,25 +112,18 @@ func (u *authUsecase) Register(
 			return err
 		}
 
-		userRole := &domain.UserRole{
-			UserID: user.ID, // ✅ uint
+		return u.userRoleRepo.Create(tx, &domain.UserRole{
+			UserID: user.ID,
 			RoleID: roleID,
-		}
-
-		if err := u.userRoleRepo.Create(tx, userRole); err != nil {
-			return err
-		}
-
-		return nil
+		})
 	})
 }
 
-/* ================= LOGOUT ================= */
 func (u *authUsecase) Logout(token string) {
+	// blacklist token
 	tokenBlacklist.Store(token, true)
 }
 
-/* ================= FORGOT PASSWORD ================= */
 func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
@@ -117,7 +131,7 @@ func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": user.ID, // ✅ uint
+		"user_id": user.ID,
 		"exp":     time.Now().Add(15 * time.Minute).Unix(),
 	}
 
