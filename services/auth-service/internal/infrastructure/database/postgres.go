@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 
 	"auth-service/internal/infrastructure/config"
@@ -27,6 +26,6 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	log.Println("✅ connected to postgres:", cfg.DB.Name)
+	// log.Println("✅ connected to postgres:", cfg.DB.Name)
 	return db, nil
 }

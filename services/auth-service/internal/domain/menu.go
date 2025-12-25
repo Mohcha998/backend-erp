@@ -1,9 +1,7 @@
 package domain
 
-import "github.com/google/uuid"
-
 type Menu struct {
-	ID   uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Name string
+	ID   uint   `gorm:"primaryKey;autoIncrement"`
+	Name string `gorm:"not null"`
 	Path string
 }

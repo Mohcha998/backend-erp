@@ -32,24 +32,48 @@ func Run() {
 
 	// ================= REPOSITORIES =================
 	userRepo := repository.NewUserRepository(db)
-	userRoleRepo := repository.NewUserRoleRepository(db) // wajib untuk auth usecase
+	userRoleRepo := repository.NewUserRoleRepository(db)
 
-	// ================= USECASE =================
+	divisionRepo := repository.NewDivisionRepository(db)
+	roleRepo := repository.NewRoleRepository(db)
+	menuRepo := repository.NewMenuRepository(db)
+	permissionRepo := repository.NewRoleMenuPermissionRepository(db)
+
+	// ================= USECASES =================
 	authUC := usecase.NewAuthUsecase(db, userRepo, userRoleRepo, cfg.JWT.SecretKey)
+	userUC := usecase.NewUserUsecase(db, userRepo)
+	divisionUC := usecase.NewDivisionUsecase(divisionRepo)
+	roleUC := usecase.NewRoleUsecase(roleRepo)
+	menuUC := usecase.NewMenuUsecase(menuRepo)
+	permissionUC := usecase.NewPermissionUsecase(permissionRepo)
 
-	// ================= HANDLER =================
+	// ================= HANDLERS =================
 	authHandler := v1.NewAuthHandler(authUC)
+	userHandler := v1.NewUserHandler(userUC)
+	divisionHandler := v1.NewDivisionHandler(divisionUC)
+	roleHandler := v1.NewRoleHandler(roleUC)
+	menuHandler := v1.NewMenuHandler(menuUC)
+	permissionHandler := v1.NewPermissionHandler(permissionUC)
 
-	// ================= HEALTH CHECK =================
+	// ================= HEALTH =================
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	// ================= ROUTES =================
 	api := r.Group("/api")
-	v1.RegisterAuthRoutes(api, authHandler)
 
-	// ================= SERVER =================
+	v1.RegisterRoutes(
+		api,
+		authHandler,
+		userHandler,
+		roleHandler,
+		menuHandler,
+		divisionHandler,
+		permissionHandler,
+	)
+
+	// ================= HTTP SERVER =================
 	srv := &http.Server{
 		Addr:         ":" + cfg.App.Port,
 		Handler:      r,

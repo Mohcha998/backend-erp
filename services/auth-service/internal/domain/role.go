@@ -1,8 +1,6 @@
 package domain
 
-import "github.com/google/uuid"
-
 type Role struct {
-	ID   uuid.UUID `gorm:"type:uuid;primaryKey"`
-	Name string
+	ID   uint   `gorm:"primaryKey;autoIncrement"`
+	Name string `gorm:"unique;not null"`
 }

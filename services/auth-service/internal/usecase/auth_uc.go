@@ -9,14 +9,13 @@ import (
 	"auth-service/internal/repository"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type AuthUsecase interface {
 	Login(email, password string) (string, error)
-	Register(name, email, password string, divisionID, roleID uuid.UUID) error
+	Register(name, email, password string, divisionID, roleID uint) error
 	Logout(token string)
 	ForgotPassword(email string) (string, error)
 }
@@ -59,7 +58,7 @@ func (u *authUsecase) Login(email, password string) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": user.ID.String(),
+		"user_id": user.ID, // ✅ uint
 		"email":   user.Email,
 		"exp":     time.Now().Add(8 * time.Hour).Unix(),
 	}
@@ -71,7 +70,7 @@ func (u *authUsecase) Login(email, password string) (string, error) {
 /* ================= REGISTER ================= */
 func (u *authUsecase) Register(
 	name, email, password string,
-	divisionID, roleID uuid.UUID,
+	divisionID, roleID uint,
 ) error {
 	_, err := u.userRepo.FindByEmail(email)
 	if err == nil {
@@ -82,7 +81,6 @@ func (u *authUsecase) Register(
 
 	return u.db.Transaction(func(tx *gorm.DB) error {
 		user := &domain.User{
-			ID:         uuid.New(),
 			Name:       name,
 			Email:      email,
 			Password:   string(hash),
@@ -94,7 +92,7 @@ func (u *authUsecase) Register(
 		}
 
 		userRole := &domain.UserRole{
-			UserID: user.ID,
+			UserID: user.ID, // ✅ uint
 			RoleID: roleID,
 		}
 
@@ -119,7 +117,7 @@ func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": user.ID.String(),
+		"user_id": user.ID, // ✅ uint
 		"exp":     time.Now().Add(15 * time.Minute).Unix(),
 	}
 

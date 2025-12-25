@@ -1,11 +1,9 @@
 package domain
 
-import "github.com/google/uuid"
-
 type User struct {
-	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	ID         uint `gorm:"primaryKey;autoIncrement"`
 	Name       string
-	Email      string `gorm:"unique"`
-	Password   string
-	DivisionID uuid.UUID
+	Email      string `gorm:"unique;not null"`
+	Password   string `gorm:"not null"`
+	DivisionID uint   `gorm:"not null"`
 }
