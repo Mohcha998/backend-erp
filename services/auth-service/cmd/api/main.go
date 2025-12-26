@@ -19,6 +19,7 @@
 // @name Authorization
 
 package main
+import "fmt"
 
 import (
 	_ "auth-service/docs" // ← WAJIB untuk swagger
@@ -26,5 +27,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Starting the server...") 
 	server.Run()
+	fmt.Println("Server has started.")
 }
