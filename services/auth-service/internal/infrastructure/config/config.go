@@ -37,10 +37,10 @@ func Load() *Config {
 		// 	Name:     getEnv("PGDATABASE", "erp_db"),
 		// },
 		DB: DBConfig{
-			Host:     getEnv("PGHOST", "127.0.0.1"),
+			Host:     getEnv("PGHOST", "localhost"),
 			Port:     getEnv("PGPORT", "5432"),
-			User:     getEnv("PGUSER", "MRCorp"),
-			Password: getEnv("PGPASSWORD", ""),
+			User:     getEnv("PGUSER", "postgres"),
+			Password: getEnv("PGPASSWORD", "123"),
 			Name:     getEnv("PGDATABASE", "erp_db"),
 		},
 		JWT: JWTConfig{
