@@ -2,9 +2,9 @@ name: Notify Discord
 
 on:
   push:
-    branches:
-      - master
-  workflow_dispatch:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
   notify:
@@ -13,9 +13,13 @@ jobs:
     steps:
       - name: Send Discord notification
         run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            MESSAGE="🚀 **Push to master**\n📝 Commit: ${{ github.event.head_commit.message }}\n👤 By: ${{ github.actor }}"
+          else
+            MESSAGE="🔵 **Pull Request**\n📌 Title: ${{ github.event.pull_request.title }}\n👤 By: ${{ github.actor }}"
+          fi
+
           curl -X POST \
             -H "Content-Type: application/json" \
-            -d "{
-              \"content\": \"🚀 **Push ke master!**\nRepo: ${{ github.repository }}\nCommit: ${{ github.event.head_commit.message }}\nBy: ${{ github.actor }}\"
-            }" \
+            -d "{\"content\":\"$MESSAGE\"}" \
             ${{ secrets.DISCORD_WEBHOOK }}
