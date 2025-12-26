@@ -16,6 +16,6 @@ func main() {
 		})
 	})
 
-	log.Println("Inventory Service running on :8080")
-	r.Run(":8080")
+	log.Println("Inventory Service running on :8082")
+	r.Run(":8082")
 }

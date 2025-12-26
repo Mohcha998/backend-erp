@@ -1,15 +1,25 @@
 version: "3.9"
 
+networks:
+  public_net:
+    driver: bridge
+  internal_net:
+    driver: bridge
+    internal: true
+
 services:
+  # =====================
+  # POSTGRES (INTERNAL)
+  # =====================
   postgres:
     image: postgres:15
     container_name: erp-postgres
+    networks:
+      - internal_net
     environment:
       POSTGRES_DB: erp_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,41 +28,84 @@ services:
       timeout: 5s
       retries: 5
 
+  # =====================
+  # AUTH SERVICE (INTERNAL)
+  # =====================
   auth-service:
     build: ./services/auth-service
     container_name: auth-service
-    ports:
-      - "8081:8081"
+    networks:
+      - internal_net
+    expose:
+      - "8081"
     environment:
       APP_PORT: 8081
-
       PGHOST: postgres
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: erp_db
-
       JWT_SECRET: supersecret
       GIN_MODE: release
     depends_on:
       postgres:
         condition: service_healthy
 
+  # =====================
+  # INVENTORY SERVICE (INTERNAL)
+  # =====================
   inventory-service:
     build: ./services/inventory-service
     container_name: inventory-service
-    ports:
-      - "8080:8080"
+    networks:
+      - internal_net
+    expose:
+      - "8082"
     environment:
+      APP_PORT: 8082
       GIN_MODE: release
 
+  # =====================
+  # PURCHASING SERVICE (INTERNAL)
+  # =====================
   purchasing-service:
     build: ./services/purchasing-service
     container_name: purchasing-service
-    ports:
-      - "8082:8082"
+    networks:
+      - internal_net
+    expose:
+      - "8083"
     environment:
+      APP_PORT: 8083
       GIN_MODE: release
+
+  # =====================
+  # API GATEWAY (PUBLIC)
+  # =====================
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    networks:
+      - public_net
+      - internal_net
+    ports:
+      - "8080:8080"   # HTTPS
+    environment:
+      GATEWAY_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8081
+      INVENTORY_SERVICE_URL: http://inventory-service:8082
+      PURCHASING_SERVICE_URL: http://purchasing-service:8083
+    volumes:
+      - ./api-gateway/certs:/certs:ro
+    depends_on:
+      - auth-service
+      - inventory-service
+      - purchasing-service
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "https://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

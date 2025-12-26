@@ -1,5 +1,5 @@
 -- =====================================================
--- EXTENSION (OPTIONAL - PostgreSQL)
+-- EXTENSION (OPTIONAL)
 -- =====================================================
 -- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -9,8 +9,8 @@
 CREATE TABLE divisions (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP NULL
 );
 
@@ -20,8 +20,8 @@ CREATE TABLE divisions (
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP NULL
 );
 
@@ -33,8 +33,8 @@ CREATE TABLE menus (
     code VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     path VARCHAR(150),
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP NULL
 );
 
@@ -45,8 +45,8 @@ CREATE TABLE permissions (
     id SERIAL PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP NULL
 );
 
@@ -59,9 +59,9 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     division_id INTEGER,
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP NULL,
 
     CONSTRAINT fk_users_division
@@ -71,7 +71,7 @@ CREATE TABLE users (
 );
 
 -- =====================================================
--- USER ROLES (Many-to-Many)
+-- USER ROLES
 -- =====================================================
 CREATE TABLE user_roles (
     user_id INTEGER NOT NULL,
@@ -154,7 +154,7 @@ CREATE TABLE activity_logs (
     user_id INTEGER NOT NULL,
     activity VARCHAR(255) NOT NULL,
     ip_address VARCHAR(50),
-    created_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_activity_user
         FOREIGN KEY (user_id)
@@ -174,7 +174,7 @@ CREATE TABLE audit_logs (
     entity VARCHAR(50) NOT NULL,
     entity_id INTEGER,
     ip_address VARCHAR(50),
-    created_at TIMESTAMP DEFAULT now(),
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_audit_user
         FOREIGN KEY (user_id)
@@ -192,13 +192,14 @@ CREATE TABLE refresh_tokens (
     user_id INTEGER NOT NULL,
     token TEXT NOT NULL,
     expires_at TIMESTAMP NOT NULL,
-    revoked BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT now(),
+    revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_refresh_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
-        ON DELETE
+        ON DELETE CASCADE
+);
 
 -- =====================================================
 -- INDEXES (PERFORMANCE)

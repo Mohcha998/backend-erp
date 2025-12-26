@@ -1,5 +1,5 @@
 -- =====================================================
--- DROP CHILD TABLES (RELATION)
+-- DROP CHILD TABLES (RELATIONS & LOGS)
 -- =====================================================
 
 DROP TABLE IF EXISTS refresh_tokens;
