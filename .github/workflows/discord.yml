@@ -15,12 +15,41 @@ jobs:
       - name: Send Discord notification
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            MESSAGE="🚀 **Push ke master**\n📝 Commit: ${{ github.event.head_commit.message }}\n👤 By: ${{ github.actor }}"
+            TITLE="🚀 Push to master"
+            DESCRIPTION="**Commit:** ${{ github.event.head_commit.message }}"
+            URL="${{ github.event.head_commit.url }}"
+            COLOR=3066993
           else
-            MESSAGE="🔵 **Pull Request**\n📌 Title: ${{ github.event.pull_request.title }}\n👤 By: ${{ github.actor }}"
+            TITLE="🔵 Pull Request"
+            DESCRIPTION="**Title:** ${{ github.event.pull_request.title }}"
+            URL="${{ github.event.pull_request.html_url }}"
+            COLOR=3447003
           fi
 
           curl -X POST \
             -H "Content-Type: application/json" \
-            -d "{\"content\":\"$MESSAGE\"}" \
+            -d "{
+              \"username\": \"GitHub Bot\",
+              \"embeds\": [{
+                \"title\": \"$TITLE\",
+                \"description\": \"$DESCRIPTION\",
+                \"url\": \"$URL\",
+                \"color\": $COLOR,
+                \"fields\": [
+                  {
+                    \"name\": \"Repository\",
+                    \"value\": \"${{ github.repository }}\",
+                    \"inline\": true
+                  },
+                  {
+                    \"name\": \"Author\",
+                    \"value\": \"${{ github.actor }}\",
+                    \"inline\": true
+                  }
+                ],
+                \"footer\": {
+                  \"text\": \"GitHub Actions • Auto Notification\"
+                }
+              }]
+            }" \
             ${{ secrets.DISCORD_WEBHOOK }}
