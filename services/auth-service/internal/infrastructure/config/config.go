@@ -37,29 +37,6 @@ type SecurityConfig struct {
 }
 
 func Load() *Config {
-<<<<<<< HEAD
-	return &Config{
-		App: AppConfig{
-			Port: getEnv("APP_PORT", "8081"),
-		},
-		// DB: DBConfig{
-		// 	Host:     getEnv("PGHOST", "127.0.0.1"),
-		// 	Port:     getEnv("PGPORT", "5432"),
-		// 	User:     getEnv("PGUSER", "postgres"),
-		// 	Password: getEnv("PGPASSWORD", ""),
-		// 	Name:     getEnv("PGDATABASE", "erp_db"),
-		// },
-		DB: DBConfig{
-			Host:     getEnv("PGHOST", "localhost"),
-			Port:     getEnv("PGPORT", "5432"),
-			User:     getEnv("PGUSER", "postgres"),
-			Password: getEnv("PGPASSWORD", "123"),
-			Name:     getEnv("PGDATABASE", "erp_db"),
-		},
-		JWT: JWTConfig{
-			SecretKey: getEnv("JWT_SECRET", "secret"),
-		},
-=======
 	_ = godotenv.Load()
 
 	cfg := &Config{}
@@ -77,7 +54,6 @@ func Load() *Config {
 		User:     getEnv("PGUSER", "MRCorp"),
 		Password: getEnv("PGPASSWORD", ""),
 		Name:     getEnv("PGDATABASE", "erp_db"),
->>>>>>> 8ef03f98876a76569ae9f44783c4e6430826df7d
 	}
 
 	cfg.JWT.SecretKey = getEnv("JWT_SECRET", "secret")
