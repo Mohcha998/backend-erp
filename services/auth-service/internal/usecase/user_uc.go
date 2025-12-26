@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"auth-service/internal/domain"
+	"auth-service/internal/pkg/apperror"
 	"auth-service/internal/repository"
 
 	"gorm.io/gorm"
@@ -19,16 +20,45 @@ func NewUserUsecase(db *gorm.DB, repo repository.UserRepository) *UserUsecase {
 	}
 }
 
-// CREATE USER (ADMIN)
 func (u *UserUsecase) Create(user *domain.User) error {
 	return u.db.Transaction(func(tx *gorm.DB) error {
-		return u.repo.Create(tx, user)
+		if err := u.repo.Create(tx, user); err != nil {
+			return apperror.ErrInternal
+		}
+		return nil
 	})
 }
 
-// GET ALL USER
 func (u *UserUsecase) GetAll() ([]domain.User, error) {
-	var users []domain.User
-	err := u.db.Find(&users).Error
-	return users, err
+	users, err := u.repo.FindAll()
+	if err != nil {
+		return nil, apperror.ErrInternal
+	}
+	return users, nil
+}
+
+func (u *UserUsecase) GetByID(id uint) (*domain.User, error) {
+	user, err := u.repo.FindByID(id)
+	if err != nil {
+		return nil, apperror.ErrNotFound
+	}
+	return user, nil
+}
+
+func (u *UserUsecase) Update(user *domain.User) error {
+	return u.db.Transaction(func(tx *gorm.DB) error {
+		if err := u.repo.Update(tx, user); err != nil {
+			return apperror.ErrNotFound
+		}
+		return nil
+	})
+}
+
+func (u *UserUsecase) Delete(id uint) error {
+	return u.db.Transaction(func(tx *gorm.DB) error {
+		if err := u.repo.Delete(tx, id); err != nil {
+			return apperror.ErrNotFound
+		}
+		return nil
+	})
 }

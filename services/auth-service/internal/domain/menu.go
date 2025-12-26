@@ -1,9 +1,13 @@
 package domain
 
-type Menu struct {
-	ID   uint   `gorm:"primaryKey"`
-	Name string `gorm:"size:50;not null"`
+import "gorm.io/gorm"
 
-	Divisions []Division `gorm:"many2many:division_menus"`
-	Roles     []Role     `gorm:"many2many:role_menus"`
+type Menu struct {
+	ID        uint   `gorm:"primaryKey"`
+	Code      string `gorm:"unique;not null"`
+	Name      string `gorm:"not null"`
+	Path      string
+	CreatedAt int64
+	UpdatedAt int64
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }

@@ -6,17 +6,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type RoleMenuPermissionRepository struct{ db *gorm.DB }
-
-func NewRoleMenuPermissionRepository(db *gorm.DB) *RoleMenuPermissionRepository {
-	return &RoleMenuPermissionRepository{db}
+type RolePermissionRepository interface {
+	Assign(roleID uint, permissionIDs []uint) error
 }
 
-func (r *RoleMenuPermissionRepository) Create(p *domain.RoleMenuPermission) error {
-	return r.db.Create(p).Error
+type rolePermissionRepo struct {
+	db *gorm.DB
 }
 
-func (r *RoleMenuPermissionRepository) FindAll() ([]domain.RoleMenuPermission, error) {
-	var data []domain.RoleMenuPermission
-	return data, r.db.Find(&data).Error
+func NewRolePermissionRepository(db *gorm.DB) RolePermissionRepository {
+	return &rolePermissionRepo{db}
+}
+
+func (r *rolePermissionRepo) Assign(roleID uint, permissionIDs []uint) error {
+	var perms []domain.Permission
+	r.db.Where("id IN ?", permissionIDs).Find(&perms)
+
+	return r.db.Model(&domain.Role{ID: roleID}).
+		Association("Permissions").
+		Replace(&perms)
 }

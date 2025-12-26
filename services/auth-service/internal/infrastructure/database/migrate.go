@@ -12,17 +12,25 @@ func RunMigration(db *gorm.DB) {
 	log.Println("🚀 running database migration")
 
 	err := db.AutoMigrate(
-		// master
+		// ===== MASTER =====
 		&domain.Division{},
-		&domain.Menu{},
 		&domain.Role{},
+		&domain.Menu{},
 		&domain.Permission{},
 		&domain.User{},
-		&domain.DivisionMenu{},
+
+		// ===== RELATION =====
+		&domain.UserRole{},
+		&domain.DivisionRole{},
 		&domain.RoleMenu{},
 		&domain.RolePermission{},
-		&domain.UserRole{},
+
+		// ===== LOGGING =====
+		&domain.ActivityLog{},
+		&domain.AuditLog{},
+		&domain.RefreshToken{},
 	)
+
 	if err != nil {
 		log.Fatal("❌ migration failed:", err)
 	}

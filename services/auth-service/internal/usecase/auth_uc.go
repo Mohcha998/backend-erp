@@ -2,82 +2,166 @@ package usecase
 
 import (
 	"errors"
-	"sync"
 	"time"
 
 	"auth-service/internal/domain"
 	"auth-service/internal/repository"
+	"auth-service/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
+// ================= INTERFACE =================
 type AuthUsecase interface {
-	Login(email, password string) (string, error)
+	Login(email, password string) (accessToken string, refreshToken string, err error)
+	RefreshToken(refreshToken string) (string, string, error)
 	Register(name, email, password string, divisionID, roleID uint) error
-	Logout(token string)
+	Logout(refreshToken string)
 	ForgotPassword(email string) (string, error)
+
+	// ✅ wajib untuk Auto Refresh Middleware
+	ValidateAccessToken(token string) (*jwt.Token, error)
 }
 
+// ================= STRUCT =================
 type authUsecase struct {
 	db           *gorm.DB
 	userRepo     repository.UserRepository
 	userRoleRepo repository.UserRoleRepository
+	refreshRepo  repository.RefreshTokenRepository
 	jwtKey       string
 }
 
-var tokenBlacklist sync.Map
-
+// ================= CONSTRUCTOR =================
 func NewAuthUsecase(
 	db *gorm.DB,
 	userRepo repository.UserRepository,
 	userRoleRepo repository.UserRoleRepository,
+	refreshRepo repository.RefreshTokenRepository,
 	jwtKey string,
 ) AuthUsecase {
 	return &authUsecase{
 		db:           db,
 		userRepo:     userRepo,
 		userRoleRepo: userRoleRepo,
+		refreshRepo:  refreshRepo,
 		jwtKey:       jwtKey,
 	}
 }
 
-/* ================= LOGIN ================= */
-func (u *authUsecase) Login(email, password string) (string, error) {
+// =====================================================
+// LOGIN
+// =====================================================
+func (u *authUsecase) Login(email, password string) (string, string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", errors.New("user not found")
+		return "", "", errors.New("invalid email or password")
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
 		[]byte(password),
 	); err != nil {
-		return "", errors.New("invalid password")
+		return "", "", errors.New("invalid email or password")
 	}
 
-	claims := jwt.MapClaims{
-		"user_id": user.ID, // ✅ uint
+	// ===== ACCESS TOKEN =====
+	accessClaims := jwt.MapClaims{
+		"user_id": user.ID,
 		"email":   user.Email,
-		"exp":     time.Now().Add(8 * time.Hour).Unix(),
+		"exp":     time.Now().Add(15 * time.Minute).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(u.jwtKey))
+	accessToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		accessClaims,
+	).SignedString([]byte(u.jwtKey))
+	if err != nil {
+		return "", "", err
+	}
+
+	// ===== REFRESH TOKEN =====
+	rawRefresh := uuid.NewString()
+	hashed := utils.HashToken(rawRefresh)
+
+	err = u.refreshRepo.Create(&domain.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: hashed,
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, rawRefresh, nil
 }
 
-/* ================= REGISTER ================= */
+// =====================================================
+// REFRESH TOKEN
+// =====================================================
+func (u *authUsecase) RefreshToken(oldRefresh string) (string, string, error) {
+	hashed := utils.HashToken(oldRefresh)
+
+	rt, err := u.refreshRepo.FindValid(hashed)
+	if err != nil {
+		return "", "", errors.New("invalid refresh token")
+	}
+
+	// revoke old token
+	_ = u.refreshRepo.Revoke(hashed)
+
+	user, err := u.userRepo.FindByID(rt.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	// ===== NEW ACCESS TOKEN =====
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+	}
+
+	newAccess, _ := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	).SignedString([]byte(u.jwtKey))
+
+	// ===== NEW REFRESH TOKEN =====
+	newRefresh := uuid.NewString()
+	newHash := utils.HashToken(newRefresh)
+
+	_ = u.refreshRepo.Create(&domain.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: newHash,
+		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+	})
+
+	return newAccess, newRefresh, nil
+}
+
+// =====================================================
+// REGISTER
+// =====================================================
 func (u *authUsecase) Register(
 	name, email, password string,
 	divisionID, roleID uint,
 ) error {
-	_, err := u.userRepo.FindByEmail(email)
-	if err == nil {
+
+	if _, err := u.userRepo.FindByEmail(email); err == nil {
 		return errors.New("email already registered")
 	}
 
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte(password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		return err
+	}
 
 	return u.db.Transaction(func(tx *gorm.DB) error {
 		user := &domain.User{
@@ -85,31 +169,31 @@ func (u *authUsecase) Register(
 			Email:      email,
 			Password:   string(hash),
 			DivisionID: divisionID,
+			IsActive:   true,
 		}
 
 		if err := u.userRepo.Create(tx, user); err != nil {
 			return err
 		}
 
-		userRole := &domain.UserRole{
-			UserID: user.ID, // ✅ uint
+		return u.userRoleRepo.Create(tx, &domain.UserRole{
+			UserID: user.ID,
 			RoleID: roleID,
-		}
-
-		if err := u.userRoleRepo.Create(tx, userRole); err != nil {
-			return err
-		}
-
-		return nil
+		})
 	})
 }
 
-/* ================= LOGOUT ================= */
-func (u *authUsecase) Logout(token string) {
-	tokenBlacklist.Store(token, true)
+// =====================================================
+// LOGOUT
+// =====================================================
+func (u *authUsecase) Logout(refreshToken string) {
+	hashed := utils.HashToken(refreshToken)
+	_ = u.refreshRepo.Revoke(hashed)
 }
 
-/* ================= FORGOT PASSWORD ================= */
+// =====================================================
+// FORGOT PASSWORD
+// =====================================================
 func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
@@ -117,10 +201,21 @@ func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": user.ID, // ✅ uint
+		"user_id": user.ID,
 		"exp":     time.Now().Add(15 * time.Minute).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(u.jwtKey))
+	return jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	).SignedString([]byte(u.jwtKey))
+}
+
+// =====================================================
+// VALIDATE ACCESS TOKEN (AUTO REFRESH)
+// =====================================================
+func (u *authUsecase) ValidateAccessToken(token string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(u.jwtKey), nil
+	})
 }

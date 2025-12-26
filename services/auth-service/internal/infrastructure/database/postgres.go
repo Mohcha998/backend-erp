@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
@@ -11,6 +12,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var dbInstance *gorm.DB
+
+// ==============================
+// INIT CONNECTION
+// ==============================
 func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -24,14 +30,44 @@ func NewPostgres(cfg *config.Config) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 
-	// 🔁 Retry connect (Docker-safe)
 	for i := 1; i <= 15; i++ {
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
+			log.Println("✅ Connected to PostgreSQL")
+			SetDB(db)
+			setPool(db)
 			return db, nil
 		}
+
+		log.Printf("⏳ Waiting for DB... (%d/15)\n", i)
 		time.Sleep(2 * time.Second)
 	}
 
 	return nil, err
+}
+
+// ==============================
+// GLOBAL DB ACCESS
+// ==============================
+func SetDB(db *gorm.DB) {
+	dbInstance = db
+}
+
+func GetDB() *gorm.DB {
+	return dbInstance
+}
+
+// ==============================
+// CONNECTION POOL
+// ==============================
+func setPool(db *gorm.DB) {
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Println("⚠️ Failed to get DB instance:", err)
+		return
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 }
