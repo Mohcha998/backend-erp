@@ -9,10 +9,11 @@
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:8080
+// @host localhost:8081
 // @BasePath /api
-// @schemes http https
+// @schemes http
 
+// 🔐 JWT AUTH
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

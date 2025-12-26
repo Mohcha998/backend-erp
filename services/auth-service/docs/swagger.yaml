@@ -8,7 +8,7 @@ definitions:
     type: object
   domain.User:
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact:
     email: support@yourcompany.com
@@ -869,7 +869,6 @@ paths:
       - Users
 schemes:
 - http
-- https
 securityDefinitions:
   BearerAuth:
     in: header

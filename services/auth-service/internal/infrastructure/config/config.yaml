@@ -1,17 +1,11 @@
 app:
-  name: "auth-service"
-  version: "v1"
-  port: ":8081"
-  environment: "development"
-  timeout: 10
+  name: auth-service
+  env: development
 
-postgres:
-  host: "localhost"
-  port: 5432
-  user: "MRCorp"
-  password: ""
-  db_name: "erp_db"
-  ssl_mode: "disable"
+security:
+  access_token_exp: 15m
+  refresh_token_exp: 30d
 
-jwt:
-  secret_key: "secret"
+rate_limit:
+  requests: 100
+  per_minute: 1
