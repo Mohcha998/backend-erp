@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"auth-service/internal/usecase"
-
+	"auth-service/internal/pkg/apperror"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,13 +35,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	accessToken, refreshToken, err := h.authUC.Login(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": apperror.ErrUnauthorized.Message})
 		return
 	}
 
@@ -68,13 +68,13 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	accessToken, refreshToken, err := h.authUC.RefreshToken(req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": apperror.ErrUnauthorized.Message})
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		req.RoleID,
 	)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
@@ -136,13 +136,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": apperror.ErrUnauthorized.Message})
 		return
 	}
 
 	token := strings.TrimPrefix(authHeader, "Bearer ")
 	if token == authHeader {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token format"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": apperror.ErrUnauthorized.Message})
 		return
 	}
 
@@ -169,13 +169,13 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	token, err := h.authUC.ForgotPassword(req.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 

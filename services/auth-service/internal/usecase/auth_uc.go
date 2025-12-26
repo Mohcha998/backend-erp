@@ -1,11 +1,12 @@
 package usecase
 
 import (
-	"errors"
+	// "errors"
 	"time"
 
 	"auth-service/internal/domain"
 	"auth-service/internal/repository"
+	"auth-service/internal/pkg/apperror"
 	"auth-service/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -58,14 +59,14 @@ func NewAuthUsecase(
 func (u *authUsecase) Login(email, password string) (string, string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", "", errors.New("invalid email or password")
+		return "", "", apperror.ErrNotFound // Using apperror for consistent error handling
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
 		[]byte(password),
 	); err != nil {
-		return "", "", errors.New("invalid email or password")
+		return "", "", apperror.ErrUnauthorized // Unauthorized access error
 	}
 
 	// ===== ACCESS TOKEN =====
@@ -80,7 +81,7 @@ func (u *authUsecase) Login(email, password string) (string, string, error) {
 		accessClaims,
 	).SignedString([]byte(u.jwtKey))
 	if err != nil {
-		return "", "", err
+		return "", "", apperror.ErrInternal // Internal error for failed token generation
 	}
 
 	// ===== REFRESH TOKEN =====
@@ -93,7 +94,7 @@ func (u *authUsecase) Login(email, password string) (string, string, error) {
 		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 	})
 	if err != nil {
-		return "", "", err
+		return "", "", apperror.ErrInternal // Error while storing refresh token
 	}
 
 	return accessToken, rawRefresh, nil
@@ -107,7 +108,7 @@ func (u *authUsecase) RefreshToken(oldRefresh string) (string, string, error) {
 
 	rt, err := u.refreshRepo.FindValid(hashed)
 	if err != nil {
-		return "", "", errors.New("invalid refresh token")
+		return "", "", apperror.ErrUnauthorized // Invalid refresh token error
 	}
 
 	// revoke old token
@@ -115,7 +116,7 @@ func (u *authUsecase) RefreshToken(oldRefresh string) (string, string, error) {
 
 	user, err := u.userRepo.FindByID(rt.UserID)
 	if err != nil {
-		return "", "", err
+		return "", "", apperror.ErrNotFound // User not found
 	}
 
 	// ===== NEW ACCESS TOKEN =====
@@ -152,7 +153,7 @@ func (u *authUsecase) Register(
 ) error {
 
 	if _, err := u.userRepo.FindByEmail(email); err == nil {
-		return errors.New("email already registered")
+		return apperror.ErrBadRequest // Bad request for duplicate email
 	}
 
 	hash, err := bcrypt.GenerateFromPassword(
@@ -160,7 +161,7 @@ func (u *authUsecase) Register(
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		return err
+		return apperror.ErrInternal // Internal error for password hashing failure
 	}
 
 	return u.db.Transaction(func(tx *gorm.DB) error {
@@ -173,7 +174,7 @@ func (u *authUsecase) Register(
 		}
 
 		if err := u.userRepo.Create(tx, user); err != nil {
-			return err
+			return apperror.ErrInternal // Error during user creation
 		}
 
 		return u.userRoleRepo.Create(tx, &domain.UserRole{
@@ -197,7 +198,7 @@ func (u *authUsecase) Logout(refreshToken string) {
 func (u *authUsecase) ForgotPassword(email string) (string, error) {
 	user, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", errors.New("email not found")
+		return "", apperror.ErrNotFound // Email not found error
 	}
 
 	claims := jwt.MapClaims{

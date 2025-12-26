@@ -6,6 +6,7 @@ import (
 
 	"auth-service/internal/domain"
 	"auth-service/internal/usecase"
+	"auth-service/internal/pkg/apperror"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,7 @@ func (h *RoleHandler) Create(c *gin.Context) {
 	var req domain.Role
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
@@ -48,7 +49,7 @@ func (h *RoleHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.uc.Create(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *RoleHandler) Create(c *gin.Context) {
 func (h *RoleHandler) GetAll(c *gin.Context) {
 	data, err := h.uc.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 
@@ -96,13 +97,13 @@ func (h *RoleHandler) GetAll(c *gin.Context) {
 func (h *RoleHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	data, err := h.uc.GetByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "role not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": apperror.ErrNotFound.Message})
 		return
 	}
 
@@ -128,7 +129,7 @@ func (h *RoleHandler) GetByID(c *gin.Context) {
 func (h *RoleHandler) Update(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
@@ -141,7 +142,7 @@ func (h *RoleHandler) Update(c *gin.Context) {
 	req.ID = uint(id)
 
 	if err := h.uc.Update(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 
@@ -166,12 +167,12 @@ func (h *RoleHandler) Update(c *gin.Context) {
 func (h *RoleHandler) Delete(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	if err := h.uc.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 

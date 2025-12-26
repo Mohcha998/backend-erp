@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"auth-service/internal/usecase"
+	"auth-service/internal/pkg/apperror"
 
 	"github.com/gin-gonic/gin"
 )
@@ -43,12 +44,12 @@ func (h *RoleMenuHandler) AssignMenu(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	if err := h.uc.Assign(req.RoleID, req.MenuIDs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 

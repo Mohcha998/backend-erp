@@ -1,6 +1,9 @@
 package usecase
 
-import "auth-service/internal/repository"
+import (
+	"auth-service/internal/repository"
+	"auth-service/internal/pkg/apperror"
+)
 
 type RoleMenuUsecase struct {
 	repo repository.RoleMenuRepository
@@ -11,5 +14,9 @@ func NewRoleMenuUsecase(r repository.RoleMenuRepository) *RoleMenuUsecase {
 }
 
 func (u *RoleMenuUsecase) Assign(roleID uint, menuIDs []uint) error {
-	return u.repo.Assign(roleID, menuIDs)
+	// Assign menu to the role and handle errors if any occur
+	if err := u.repo.Assign(roleID, menuIDs); err != nil {
+		return apperror.ErrInternal // Return a generic internal error if assignment fails
+	}
+	return nil
 }

@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting the server...") 
+	fmt.Println("Starting the server...")
 	server.Run()
 	fmt.Println("Server has started.")
 }

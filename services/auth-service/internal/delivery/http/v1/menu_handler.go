@@ -6,6 +6,7 @@ import (
 
 	"auth-service/internal/domain"
 	"auth-service/internal/usecase"
+	"auth-service/internal/pkg/apperror"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,12 +34,12 @@ func NewMenuHandler(uc *usecase.MenuUsecase) *MenuHandler {
 func (h *MenuHandler) Create(c *gin.Context) {
 	var req domain.Menu
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	if err := h.uc.Create(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 
@@ -57,7 +58,7 @@ func (h *MenuHandler) Create(c *gin.Context) {
 func (h *MenuHandler) GetAll(c *gin.Context) {
 	data, err := h.uc.GetAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 	c.JSON(http.StatusOK, data)
@@ -78,7 +79,7 @@ func (h *MenuHandler) GetByID(c *gin.Context) {
 
 	data, err := h.uc.GetByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "menu not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": apperror.ErrNotFound.Message})
 		return
 	}
 
@@ -103,14 +104,14 @@ func (h *MenuHandler) Update(c *gin.Context) {
 
 	var req domain.Menu
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": apperror.ErrBadRequest.Message})
 		return
 	}
 
 	req.ID = uint(id)
 
 	if err := h.uc.Update(&req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 
@@ -131,7 +132,7 @@ func (h *MenuHandler) Delete(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	if err := h.uc.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": apperror.ErrInternal.Message})
 		return
 	}
 

@@ -1,6 +1,9 @@
 package usecase
 
-import "auth-service/internal/repository"
+import (
+	"auth-service/internal/repository"
+	"auth-service/internal/pkg/apperror"
+)
 
 type PermissionUsecase struct {
 	repo repository.RolePermissionRepository
@@ -11,5 +14,9 @@ func NewPermissionUsecase(r repository.RolePermissionRepository) *PermissionUsec
 }
 
 func (u *PermissionUsecase) Assign(roleID uint, permissionIDs []uint) error {
-	return u.repo.Assign(roleID, permissionIDs)
+	// Assign permissions and handle any errors that may occur
+	if err := u.repo.Assign(roleID, permissionIDs); err != nil {
+		return apperror.ErrInternal // Handle error during permission assignment
+	}
+	return nil
 }
